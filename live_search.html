@@ -1,0 +1,105 @@
+Live Search  by ajax
+
+ajax:::
+                    <script>
+                        $(document).ready(function() {
+                            $('#search-input').on('input', function() { // check what you are typing
+                                var query = $(this).val();
+
+                                if (query !== '') {
+                                    $.ajax({
+                                        url: "{{ route('blogs.search') }}",
+                                        method: "GET",    //request for data
+                                        data: { query: query },   //send the data !!important things here query: name should be same contorller input $query = $request->input('query');
+                                        success: function(data) {    //It takes the data returned by the server and updates the #search-results element’s
+                                            $('#search-results').html(data.html);
+                                        },
+                                        error: function(jqXHR, textStatus, errorThrown) {
+                                            console.error('Error:', errorThrown);
+                                        }
+                                    });
+                                } else {
+                                    $('#search-results').html('');
+                                }
+                            });
+                        });
+                        </script>
+
+
+Controller ::: 
+
+    public function tech_web_blogs_search(Request $request)
+    {
+        $query = $request->input('query');
+
+        // Fetch blogs based on the search query
+        $blogs = Blog::where('title', 'LIKE', '%' . $query . '%')->get();
+
+        if ($request->ajax()) {
+            // Return partial view or "No results found" message for AJAX requests
+            if ($blogs->isEmpty()) {
+                return response()->json(['html' => '<h4 class="text-danger">No results found</h4>']);
+            }
+            return response()->json(['html' => view('frontend.blogs.blog_search_list', compact('blogs'))->render()]);
+        }
+
+        return view('frontend.blogs.publish_blog', compact('blogs'));
+    }
+
+
+    public function tech_web_upcoming_publication(){
+         return view('frontend.blogs.upcoming_publication_page',[
+            'banner'=>BannerAndTitle::where('page','enrollment')->latest()->first(),
+            'blogs' => Blog::where('status', 1)->where('publication_type',1)->latest()->paginate(4),
+            'recent_blogs' => Blog::where('status',1)->where('publication_type',1) ->latest()->take(5)->get(),
+         ]);
+    }
+
+
+for render ajax to html new view page ::
+
+
+@if($blogs->isEmpty())
+    <p>No results found</p>
+@else
+    @foreach ($blogs as $blog)
+        <div class="col-lg-6">
+            <div class="card mb-3 shadow-lg p-3 mb-5 bg-white rounded">
+                <img class="card-img-top" src="{{ asset($blog->main_image) }}" alt="Card image cap" style="height: 200px">
+                <div class="card-body">
+                    <a href="{{ route('blogs.details', $blog->id) }}">
+                        <h5 class="card-title">{!! Str::limit($blog->title, 50) !!}</h5>
+                    </a>
+                    <p class="p-1 text-white" style="background: linear-gradient(to left, #f83600, #fe8c00);">
+                        published: {{ $blog->created_at->format('M d, Y, g:i a') }}
+                    </p>
+                    <p class="card-text">{!! Str::limit($blog->short_details, 120) !!}</p>
+                    <a href="{{ route('blogs.details', $blog->id) }}" class="text-bold float-right btn btn-success">Details <i class="fa-solid fa-forward"></i></a>
+                </div>
+            </div>
+        </div>
+    @endforeach
+@endif
+
+
+Then The final view::
+
+            <div class="row" id="search-results"> //this name should match script name
+                        @foreach ($blogs as $blog)
+                         <div class="col-lg-6">
+                            <div class="card mb-3 shadow-lg p-3 mb-5 bg-white rounded">
+                                <img class="card-img-top" src="{{ asset($blog->main_image) }}" alt="Card image cap"style="height: 200px">
+                                <div class="card-body">
+                                    <a href="{{ route('blogs.details',$blog->id) }}"><h5 class="card-title">{!!  Str::limit($blog->title, 50) !!}</h5></a>
+                                    <p class="p-1 text-white" style="background: #fe8c00;  /* fallback for old browsers */
+                                    background: -webkit-linear-gradient(to left, #f83600, #fe8c00);  /* Chrome 10-25, Safari 5.1-6 */
+                                    background: linear-gradient(to left, #f83600, #fe8c00); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+                                    ">published: {{ $blog->created_at->format('M d, Y, g:i a') }}</p>
+                                  <p class="card-text">{!!  Str::limit($blog->short_details, 120) !!}</p>
+                                  <a href="{{ route('blogs.details',$blog->id) }}" class="text-bold float-right btn btn-success">Details <i class="fa-solid fa-forward"></i></a>
+                                </div>
+                              </div>
+
+                        </div>
+                        @endforeach
+                       </div>
