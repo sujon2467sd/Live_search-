@@ -103,3 +103,156 @@ Then The final view::
                         </div>
                         @endforeach
                        </div>
+
+
+price search:
+
+<select wire:model="sortBy" id="sort_by" class="form-control">
+                            <option value="default">Default</option>
+                            <option value="low_to_high">Low to High</option>
+                            <option value="high_to_low">High to Low</option>
+                        </select>
+
+ajax
+{{-- <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> --}}
+                    <script>
+                        $(document).ready(function(e){
+                        $('#sort_by').on('change',function(){  //id dorlam
+
+                            let sort_by=$('#sort_by').val(); //value collect korlam
+                            let category=$('.category').val(); //value collect korlam
+                
+                            // alert(sort_by);
+                            // console.log(sort_by);
+                            $.ajax({
+                                url:'{{route('sort.by')}}', //route
+                                method:'GET',
+                                data:{sort_by:sort_by,
+                                    category_id:category,
+                                }, //data pass korlam .. (let variable ta)
+                                success:function (res){
+                                    $('.search-result').html(res);//search result value load korbe
+                                }
+
+                            })
+                            });
+                            });
+                    </script>
+
+route::
+Route::get('/price-filter', [ProductFilterController::class, 'sorty_by'])->name('sort.by');
+
+controller:
+
+    public function sorty_by(Request $request){
+       
+        
+        $categoryId = $request->category_id;
+
+        if($request->sort_by == "low_to_high"){
+            $products=Product::where('category_id',$categoryId)->orderBy("price","asc")->get();
+        }
+        if($request->sort_by == "high_to_low"){
+            $products=Product::where('category_id',$categoryId)->orderBy("price","desc")->get();
+        }
+
+    return view("frontend.shop.price_filter",compact("products"))->render();
+}
+
+view:
+single product page
+
+@if($products->count()>=1)
+
+<div class="row justify-content-center">
+
+
+    @foreach ($products as $product)
+    <div class="col-6 col-md-4 col-lg-4">
+        <div class="product product-7 text-center">
+            <figure class="product-media">
+                <span class="product-label label-new">{{ $product->tag }}</span>
+                <a href="{{ route('product.details', $product->id) }}">
+                    <img src="{{ asset('product_images/' . $product->img) }}"
+                        alt="Product image" class="product-image">
+                </a>
+
+                <div class="product-action-vertical">
+                    <a href="#" class="btn-product-icon btn-wishlist btn-expandable"><span>add
+                            to
+                            wishlist</span></a>
+                    {{-- <a href="popup/quickView.html" class="btn-product-icon btn-quickview"
+                        title="Quick view"><span>Quick view</span></a>
+                    <a href="#" class="btn-product-icon btn-compare"
+                        title="Compare"><span>Compare</span></a> --}}
+                </div><!-- End .product-action-vertical -->
+
+                <div class="product-action">
+                    {{-- <button class="btn-product btn-cart btn-info" id="add-to-cart-btn"
+                        data-id="{{ $product->id }}">Add to Cart</button> --}}
+                    <a href="{{ route('product.details', $product->id) }}" class="btn"
+                        style="width: 100%; background:#F45706;color:#fff;">Buy Now
+
+                    </a>
+                </div><!-- End .product-action -->
+            </figure><!-- End .product-media -->
+
+            <div class="product-body">
+                <div class="product-cat">
+                    {{-- <a href="#">{{ $category->name }}</a> --}}
+                </div><!-- End .product-cat -->
+                <h3 class="product-title"><a
+                        href="{{ route('product.details', $product->id) }}">{{ $product->title
+                        }}</a>
+                </h3><!-- End .product-title -->
+                <div class="product-price">
+                    {{ $product->price }}
+                </div><!-- End .product-price -->
+                <div class="ratings-container">
+                    <div class="ratings">
+                        <div class="ratings-val" style="width: 20%;"></div>
+                        <!-- End .ratings-val -->
+                    </div><!-- End .ratings -->
+                    <span class="ratings-text">( 2 Reviews )</span>
+                </div><!-- End .rating-container -->
+
+
+
+
+                <div class="product-nav product-nav-thumbs">
+                    @foreach ($product->variations as $gallery)
+                    <a href="#" class="active">
+                        <img src="{{ asset('product_images/' . $gallery->images) }}"
+                            alt="product desc">
+                    </a>
+                    @endforeach
+                </div><!-- End .product-nav -->
+
+            </div><!-- End .product-body -->
+        </div><!-- End .product -->
+    </div><!-- End .col-sm-6 col-lg-4 -->
+    @endforeach
+</div>
+
+    
+@else
+ <div class="col-md-12 my-5 text-center">
+    <h3>Product not found</h3>
+ </div>
+   
+@endif
+
+updated here :
+  <div class="products mb-3 search-result">
+
+
+
+
+                        {{-- product --}}
+                        @include('frontend.shop.price_filter')
+
+
+
+                        {{--
+                    </div><!-- End .row --> --}}
+                </div><!-- End .products -->
